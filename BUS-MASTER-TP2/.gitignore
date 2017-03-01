@@ -1,0 +1,12 @@
+*.map
+Debug/BUS-TP2.out
+*.mk
+*.obj
+Debug/init.d
+Debug/BUS-TP2_linkInfo.xml
+*.out
+Debug/makefile
+*.d
+Debug/ccsObjs.opt
+Debug/BUS-TP2_linkInfo.xml
+/Debug/
