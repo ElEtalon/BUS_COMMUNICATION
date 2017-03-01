@@ -1,133 +1,203 @@
-#include <msp430g2211.h>
-#define CS BIT5         // Chip Select line
-#define CD BIT7         // Command/Data mode line
-#define MOSI BIT0       // Master-out Slave-in
-#define SCK BIT6        // Serial clock
+/******************************************************************************
+ *                      MSP430 ADC10 Example for the G2231
+ *
+ * Description:	This code provides an example for using the 10 bit ADC in the
+ *				MSP430G2231. The code requires either a terminal program or
+ *				the application provided on the blog mentioned below.
+ *				depending on which ascii character is sent to the device,
+ *				either VCC, the temperature sensor, or an external pin will
+ *				be measured once and the results sent to the computer.
+ *
+ *				Originally created for "NJC's MSP430 LaunchPad Blog".
+ *
+ * Author: Nicholas J. Conn - http://msp430launchpad.com
+ * Email: webmaster at msp430launchpad.com
+ * Date: 08-29-10
+ ******************************************************************************/
 
-#if 20110706 > __MSPGCC__
-/* A crude delay function. */
-void __delay_cycles( unsigned long n ) {
-    volatile unsigned int i = n/6;
-    while( i-- ) ;
-}
-#endif
+#include "msp430g2231.h"
+#include "stdbool.h"
 
-/* Write data to slave device.  Since the LCD panel is
- * write-only, we don't worry about reading any bits.
- * Destroys the data array (normally received data would
- * go in its place). */
-void spi_IO( unsigned char data[], int bytes ) {
-    int i, n;
+#define		TXD		BIT1    // TXD on P1.1
+#define		RXD		BIT2    // RXD on P1.2
 
-    // Set Chip Select low, so LCD panel knows we are talking to it.
-    P1OUT &= ~CS;
-    __delay_cycles( 500 );
+#define		Bit_time	104     // 9600 Baud, SMCLK=1MHz (1MHz/9600)=104
+#define		Bit_time_5	52      // Time for half a bit.
 
-    for( n = 0; n < bytes; n++ ) {
-        for( i = 0; i < 8; i++ ) {
-            // Put bits on the line, most significant bit first.
-            if( data[n] & 0x80 ) {
-                P1OUT |= MOSI;
-            } else {
-                P1OUT &= ~MOSI;
-            }
-            data[n] <<= 1;
+// ASCII values for the commands
+#define		TEST_SPEED	0x31
+#define		M_A3		0x32
+//#define		STREAM		0x33
+//#define		STOP		0x34
+#define		M_TEMP		0x35
+#define		M_VCC		0x36
 
-            // Pulse the clock low and wait to send the bit.  According to
-            // the data sheet, data is transferred on the rising edge.
-            P1OUT &= ~SCK;
-            __delay_cycles( 500 );
+unsigned char BitCnt;	// Bit count, used when transmitting byte
+unsigned int TXByte;	// Value sent over UART when Transmit() is called
+unsigned int RXByte;	// Value recieved once hasRecieved is set
 
-            // Send the clock back high and wait to set the next bit.  Normally
-            // we'd also read the data bits here, but the LCD is write-only.
-            P1OUT |= SCK;
-            __delay_cycles( 500 );
-        }
-    }
+unsigned int i;			// 'for' loop variable
 
-    // Set Chip Select back high to finish the communication.
-    // For data, this also triggers the LCD to update/display.
-    P1OUT |= CS;
-}
+bool isReceiving;		// Status for when the device is receiving
+bool hasReceived;		// Lets the program know when a byte is received
 
-/* Sets the LCD to command mode, and sends a 7-byte
- * sequence to initialize the panel. */
-void init_lcd( void ) {
-    unsigned char data[] = {
-        0x40, // M=0(4-share-1/3 duty; FF=0)
-        0x30, // Unsynchronized transfers
-        0x18, // Blink off
-        0x11, // Display on
-        0x15, // Segment Decoder ON
-        0x20, // Clear Data and pointer
-        0x00  // Clear blink memory
-    };
+// Function Definitions
+void Transmit(void);
+void Receive(void);
+//void Start_Stream(unsigned int);
+//void Stop_Stream(void);
 
-    P1OUT |= CD;        // set for commands
+void main(void)
+{
+	WDTCTL = WDTPW + WDTHOLD;	// Stop WDT
 
-    spi_IO( data, sizeof(data));
-}
+	BCSCTL1 = CALBC1_1MHZ;		// Set range
+	DCOCTL = CALDCO_1MHZ;		// SMCLK = DCO = 1MHz
 
-/* Prints a string on the LCD panel using the 7 segment decoder.
- * Understood characters are 0x00 (zero) to 0x09 (nine) and
- * 0x0A to 0x0F (the symbols -, E, C, =, and space). */
-void print_lcd( unsigned char data[], int n ) {
-    unsigned char copy[12];
-    unsigned char tmp;
-    int i;
+	P1SEL |= TXD;				// Connected TXD to timer pin
+	P1DIR |= TXD;
 
-    if( n < 1 ) return;
-    if( n > 12 ) n=12;
+	P1IES |= RXD;				// RXD Hi/lo edge interrupt
+	P1IFG &= ~RXD;				// Clear RXD (flag) before enabling interrupt
+	P1IE |= RXD;				// Enable RXD interrupt
+	P1DIR |= BIT0;
+	P1OUT &= ~BIT0;				// Turn off LED at P1.0
 
-    // The panel expects data arranged right to left, so we'll
-    // reverse the array of data passed before writing it out.
-    for( i = n; i > 0; i-- ) {
-        copy[n-i] = data[i-1];
-    }
+	isReceiving = false; // Set initial values
+	hasReceived = false;
 
-    P1OUT &= ~CD;       // set for data
+	__bis_SR_register(GIE); // interrupts enabled\
 
-    spi_IO( copy, n );
+	while(1)
+	{
+		if (hasReceived)		// If the device has recieved a value
+		{
+			Receive();
+		}
+		/*if(ADCDone)				// If the ADC is done with a measurement
+		{
+			ADCDone = false;				// Clear flag
+			TXByte = ADCValue & 0x00FF;		// Set TXByte
+			Transmit();						// Send
+			TXByte = (ADCValue >> 8);		// Set TXByte to the upper 8 bits
+			TXByte = TXByte & 0x00FF;*/
+		Transmit();
+		//}
+		if (~hasReceived)			// Loop again if either flag is set
+			 __bis_SR_register(CPUOFF + GIE);	// LPM0, the ADC interrupt will wake the processor up.
+	}
 }
 
-/* Draws a decimal point n places from the right, by turning on
- * the individual LCD segment (OR 0x8 mask with segment memory). */
-void decimal_on( int n ) {
-    unsigned char data[] = {
-        0x14,           // Segment Decoder off
-        0xE0+2*n,       // Set pointer 0 (plus 2 for each digit)
-        0xB8,           // Decimal point on (OR 0x8 with memory contents)
-        0x15            // Segment Decoder on
-    };
+/**
+* Handles the received byte and calls the needed functions.\
+**/
+void Receive()
+{
+	hasReceived = false;				// Clear the flag
+	switch(RXByte)					// Switch depending on command value received
+	{
+	case TEST_SPEED:
+		P1OUT |= BIT0;				// Turn on LED while testing
+		for (i = 0; i != 0x100; i++)	// Loop 256 times
+		{
+			TXByte = i;			// Sends the counter as if it were a 16 bit value
+			Transmit();
+			TXByte = 0;
+			Transmit();
+		}
+		P1OUT &= ~BIT0;			// Turn off the LED
+		break;
 
-    if( n < 0 || n > 11 ) return;
-
-    P1OUT |= CD;        // set for commands
-
-    spi_IO( data, sizeof(data));
+	default:;
+	}
 }
 
-void main( void ) {
-    // Stop the watchdog timer so it doesn't reset our chip
-    WDTCTL = WDTPW + WDTHOLD;
 
-    // These are the pins we need to drive.
-    P1DIR |= SCK + MOSI + CS + CD;
 
-    // De-select the LCD panel and set the clock high
-    P1OUT |= CS + SCK;
+/**
+* Transmits the value currently in TXByte. The function waits till it is
+*   finished transmiting before it returns.
+**/
+void Transmit()
+{
+	while(isReceiving);			// Wait for RX completion
+	TXByte |= 0x100;			// Add stop bit to TXByte (which is logical 1)
+	TXByte = TXByte << 1;			// Add start bit (which is logical 0)
+	BitCnt = 0xA;				// Load Bit counter, 8 bits + ST/SP
 
-    // Pause so everything has time to start up properly.
-    __delay_cycles( 15000 );
+	CCTL0 = OUT;				// TXD Idle as Mark
+	TACTL = TASSEL_2 + MC_2;		// SMCLK, continuous mode
+	CCR0 = TAR;				// Initialize compare register
+	CCR0 += Bit_time;			// Set time till first bit
+	CCTL0 =  CCIS0 + OUTMOD0 + CCIE; 	// Set signal, intial value, enable interrupts
+	while ( CCTL0 & CCIE ); 		// Wait for previous TX completion
+}
 
-    // Initialize the LCD panel.
-    init_lcd();
 
-    // Print a message: 1234.5
-    print_lcd("\1\2\3\4\5", 5 );
-    decimal_on( 1 );
+/**
+* Starts the receive timer, and disables any current transmission.
+**/
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1(void)
+{
+	isReceiving = true;
+	P1IE &= ~RXD;			// Disable RXD interrupt
+	P1IFG &= ~RXD;			// Clear RXD IFG (interrupt flag)
+	TACTL = TASSEL_2 + MC_2;	// SMCLK, continuous mode
+	CCR0 = TAR;			// Initialize compare register
+	CCR0 += Bit_time_5;		// Set time till first bit
+	CCTL0 = OUTMOD1 + CCIE;		// Dissable TX and enable interrupts
+	RXByte = 0;			// Initialize RXByte
+	BitCnt = 0x9;			// Load Bit counter, 8 bits + ST
+}
 
-    for( ;; ) {
-        __bis_SR_register( LPM3_bits + GIE );
-    }
+/**
+* Timer interrupt routine. This handles transmiting and receiving bytes.
+**/
+#pragma vector=TIMERA0_VECTOR
+__interrupt void Timer_A (void)
+{
+	if(!isReceiving)
+	{
+		CCR0 += Bit_time;			// Add Offset to CCR0
+		if ( BitCnt == 0)			// If all bits TXed
+		{
+			TACTL = TASSEL_2;		// SMCLK, timer off (for power consumption)
+			CCTL0 &= ~ CCIE ;		// Disable interrupt
+		}
+		else
+		{
+			CCTL0 |=  OUTMOD2;		// Set TX bit to 0
+			if (TXByte & 0x01)
+			CCTL0 &= ~ OUTMOD2;		// If it should be 1, set it to 1
+			TXByte = TXByte >> 1;
+			BitCnt --;
+		}
+	}
+	else
+	{
+		CCR0 += Bit_time;			// Add Offset to CCR0
+		if ( BitCnt == 0)
+		{
+			TACTL = TASSEL_2;		// SMCLK, timer off (for power consumption)
+			CCTL0 &= ~ CCIE ;		// Disable interrupt
+			isReceiving = false;
+			P1IFG &= ~RXD;			// clear RXD IFG (interrupt flag)
+			P1IE |= RXD;			// enabled RXD interrupt
+			if ( (RXByte & 0x201) == 0x200) // Validate the start and stop bits are correct
+			{
+				RXByte = RXByte >> 1;	// Remove start bit
+				RXByte &= 0xFF;		// Remove stop bit
+				hasReceived = true;
+			}
+			__bic_SR_register_on_exit(CPUOFF);	// Enable CPU so the main while loop continues
+		}
+		else
+		{
+			if ( (P1IN & RXD) == RXD)	// If bit is set?
+			RXByte |= 0x400;		// Set the value in the RXByte
+			RXByte = RXByte >> 1;		// Shift the bits down
+			BitCnt --;
+		}
+	}
 }
