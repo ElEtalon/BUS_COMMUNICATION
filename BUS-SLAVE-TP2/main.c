@@ -17,62 +17,27 @@
 
 #include "msp430g2231.h"
 #include "stdbool.h"
-
-#define		TXD		BIT1    // TXD on P1.1
-#define		RXD		BIT2    // RXD on P1.2
-
-#define		Bit_time	104     // 9600 Baud, SMCLK=1MHz (1MHz/9600)=104
-#define		Bit_time_5	52      // Time for half a bit.
-
-// ASCII values for the commands
-#define		TEST_SPEED	0x31
-#define		M_A3		0x32
-//#define		STREAM		0x33
-//#define		STOP		0x34
-#define		M_TEMP		0x35
-#define		M_VCC		0x36
-
-unsigned char BitCnt;	// Bit count, used when transmitting byte
-unsigned int TXByte;	// Value sent over UART when Transmit() is called
-unsigned int RXByte;	// Value recieved once hasRecieved is set
-
-unsigned int i;			// 'for' loop variable
-
-bool isReceiving;		// Status for when the device is receiving
-bool hasReceived;		// Lets the program know when a byte is received
-
-// Function Definitions
-void Transmit(void);
-void Receive(void);
-//void Start_Stream(unsigned int);
-//void Stop_Stream(void);
+#include "main.h"
+#include "init.h"
+#include "io.h"
 
 void main(void)
 {
-	WDTCTL = WDTPW + WDTHOLD;	// Stop WDT
+	*isReceiving = false; // Set initial values
+	*hasReceived = false;
 
-	BCSCTL1 = CALBC1_1MHZ;		// Set range
-	DCOCTL = CALDCO_1MHZ;		// SMCLK = DCO = 1MHz
+    InitSPI();
 
-	P1SEL |= TXD;				// Connected TXD to timer pin
-	P1DIR |= TXD;
+	 __bis_SR_register(GIE); // interrupts enabled
 
-	P1IES |= RXD;				// RXD Hi/lo edge interrupt
-	P1IFG &= ~RXD;				// Clear RXD (flag) before enabling interrupt
-	P1IE |= RXD;				// Enable RXD interrupt
-	P1DIR |= BIT0;
-	P1OUT &= ~BIT0;				// Turn off LED at P1.0
-
-	isReceiving = false; // Set initial values
-	hasReceived = false;
-
-	__bis_SR_register(GIE); // interrupts enabled\
+	P1OUT |= BIT6;				// Turn on LED while testing
 
 	while(1)
 	{
-		if (hasReceived)		// If the device has recieved a value
+		Receive(isReceiving, hasReceived, RXByte, TXByte, BitCnt);
+		/*if (*hasReceived)		// If the device has recieved a value
 		{
-			Receive();
+			Receive(isReceiving, hasReceived, RXByte, TXByte, BitCnt);
 		}
 		/*if(ADCDone)				// If the ADC is done with a measurement
 		{
@@ -80,59 +45,13 @@ void main(void)
 			TXByte = ADCValue & 0x00FF;		// Set TXByte
 			Transmit();						// Send
 			TXByte = (ADCValue >> 8);		// Set TXByte to the upper 8 bits
-			TXByte = TXByte & 0x00FF;*/
-		Transmit();
-		//}
-		if (~hasReceived)			// Loop again if either flag is set
+			TXByte = TXByte & 0x00FF;
+			Transmit();
+		}*/
+		if (~(*hasReceived))			// Loop again if either flag is set
 			 __bis_SR_register(CPUOFF + GIE);	// LPM0, the ADC interrupt will wake the processor up.
 	}
 }
-
-/**
-* Handles the received byte and calls the needed functions.\
-**/
-void Receive()
-{
-	hasReceived = false;				// Clear the flag
-	switch(RXByte)					// Switch depending on command value received
-	{
-	case TEST_SPEED:
-		P1OUT |= BIT0;				// Turn on LED while testing
-		for (i = 0; i != 0x100; i++)	// Loop 256 times
-		{
-			TXByte = i;			// Sends the counter as if it were a 16 bit value
-			Transmit();
-			TXByte = 0;
-			Transmit();
-		}
-		P1OUT &= ~BIT0;			// Turn off the LED
-		break;
-
-	default:;
-	}
-}
-
-
-
-/**
-* Transmits the value currently in TXByte. The function waits till it is
-*   finished transmiting before it returns.
-**/
-void Transmit()
-{
-	while(isReceiving);			// Wait for RX completion
-	TXByte |= 0x100;			// Add stop bit to TXByte (which is logical 1)
-	TXByte = TXByte << 1;			// Add start bit (which is logical 0)
-	BitCnt = 0xA;				// Load Bit counter, 8 bits + ST/SP
-
-	CCTL0 = OUT;				// TXD Idle as Mark
-	TACTL = TASSEL_2 + MC_2;		// SMCLK, continuous mode
-	CCR0 = TAR;				// Initialize compare register
-	CCR0 += Bit_time;			// Set time till first bit
-	CCTL0 =  CCIS0 + OUTMOD0 + CCIE; 	// Set signal, intial value, enable interrupts
-	while ( CCTL0 & CCIE ); 		// Wait for previous TX completion
-}
-
 
 /**
 * Starts the receive timer, and disables any current transmission.
@@ -140,15 +59,15 @@ void Transmit()
 #pragma vector=PORT1_VECTOR
 __interrupt void Port_1(void)
 {
-	isReceiving = true;
-	P1IE &= ~RXD;			// Disable RXD interrupt
-	P1IFG &= ~RXD;			// Clear RXD IFG (interrupt flag)
+	*isReceiving = true;
+	P1IE &= ~BIT2;			// Disable RXD interrupt
+	P1IFG &= ~BIT2;			// Clear RXD IFG (interrupt flag)
 	TACTL = TASSEL_2 + MC_2;	// SMCLK, continuous mode
 	CCR0 = TAR;			// Initialize compare register
 	CCR0 += Bit_time_5;		// Set time till first bit
 	CCTL0 = OUTMOD1 + CCIE;		// Dissable TX and enable interrupts
 	RXByte = 0;			// Initialize RXByte
-	BitCnt = 0x9;			// Load Bit counter, 8 bits + ST
+	*BitCnt = 0x9;			// Load Bit counter, 8 bits + ST
 }
 
 /**
@@ -157,10 +76,10 @@ __interrupt void Port_1(void)
 #pragma vector=TIMERA0_VECTOR
 __interrupt void Timer_A (void)
 {
-	if(!isReceiving)
+	if(!*isReceiving)
 	{
 		CCR0 += Bit_time;			// Add Offset to CCR0
-		if ( BitCnt == 0)			// If all bits TXed
+		if ( *BitCnt == 0)			// If all bits TXed
 		{
 			TACTL = TASSEL_2;		// SMCLK, timer off (for power consumption)
 			CCTL0 &= ~ CCIE ;		// Disable interrupt
@@ -168,36 +87,36 @@ __interrupt void Timer_A (void)
 		else
 		{
 			CCTL0 |=  OUTMOD2;		// Set TX bit to 0
-			if (TXByte & 0x01)
+			if (*TXByte & 0x01)
 			CCTL0 &= ~ OUTMOD2;		// If it should be 1, set it to 1
-			TXByte = TXByte >> 1;
-			BitCnt --;
+			*TXByte = *TXByte >> 1;
+			*BitCnt --;
 		}
 	}
 	else
 	{
 		CCR0 += Bit_time;			// Add Offset to CCR0
-		if ( BitCnt == 0)
+		if ( *BitCnt == 0)
 		{
 			TACTL = TASSEL_2;		// SMCLK, timer off (for power consumption)
 			CCTL0 &= ~ CCIE ;		// Disable interrupt
-			isReceiving = false;
-			P1IFG &= ~RXD;			// clear RXD IFG (interrupt flag)
-			P1IE |= RXD;			// enabled RXD interrupt
-			if ( (RXByte & 0x201) == 0x200) // Validate the start and stop bits are correct
+			*isReceiving = false;
+			P1IFG &= ~BIT2;			// clear RXD IFG (interrupt flag)
+			P1IE |= BIT2;			// enabled RXD interrupt
+			if ( (*RXByte & 0x201) == 0x200) // Validate the start and stop bits are correct
 			{
-				RXByte = RXByte >> 1;	// Remove start bit
-				RXByte &= 0xFF;		// Remove stop bit
-				hasReceived = true;
+				*RXByte = *RXByte >> 1;	// Remove start bit
+				*RXByte &= 0xFF;		// Remove stop bit
+				*hasReceived = true;
 			}
 			__bic_SR_register_on_exit(CPUOFF);	// Enable CPU so the main while loop continues
 		}
 		else
 		{
-			if ( (P1IN & RXD) == RXD)	// If bit is set?
-			RXByte |= 0x400;		// Set the value in the RXByte
-			RXByte = RXByte >> 1;		// Shift the bits down
-			BitCnt --;
+			if ( (P1IN & BIT2) == BIT2)	// If bit is set?
+			*RXByte |= 0x400;		// Set the value in the RXByte
+			*RXByte = *RXByte >> 1;		// Shift the bits down
+			*BitCnt --;
 		}
 	}
 }
