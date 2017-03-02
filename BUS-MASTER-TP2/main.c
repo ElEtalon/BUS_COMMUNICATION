@@ -30,7 +30,7 @@ void sendCharSPI(char p_char){
 	char str[30];
 
 	// ENVOI
-	sprintf(str, "** ENVOI : %c **", p_char);
+	sprintf(str, "** ENVOI : %c ** %s", p_char, EOL_WINDOWS);
 	SendString( strlen(str), str);
 
 	// EMISSION
@@ -47,14 +47,14 @@ void listeningSPI(){
 
 	// show result
 	if(result != NULL){
-		sprintf(str, " || RECU : %c ** %s", result, EOL_WINDOWS);
+		sprintf(str, "** RECU : %c ** %s", result, EOL_WINDOWS);
 		SendString( strlen(str), str);
 	}
 }
 
 void showHelp(void){
 	char str[200];
-	sprintf(str, "a%sEnvoyer l'aphabet en SPI%sh%sAfficher la liste des commandes%s", TAB_WINDOWS, EOL_WINDOWS, TAB_WINDOWS, EOL_WINDOWS);
+	sprintf(str, "a%sEnvoyer l'aphabet en SPI%sh%sAfficher la liste des commandes%sl%sListen SPI%s", TAB_WINDOWS, EOL_WINDOWS, TAB_WINDOWS, EOL_WINDOWS, TAB_WINDOWS, EOL_WINDOWS);
 	SendString( strlen(str), str);
 }
 
