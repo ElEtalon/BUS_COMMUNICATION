@@ -8,7 +8,7 @@
 #ifndef INIT_HEADER
 #define INIT_HEADER
 
-void InitUART(void);
+void InitPort(void);
 void InitSPI(void);
 
 #endif

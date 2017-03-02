@@ -8,20 +8,8 @@
 #ifndef MAIN_HEADER
 #define MAIN_HEADER
 
-const char * EOL_WINDOWS = "\r\n";
-const char * TAB_WINDOWS = "\t";
-const char * LAUNCHPAD_ROLE = "slave";
-
-bool * isReceiving;		// Status for when the device is receiving
-bool * hasReceived;		// Lets the program know when a byte is received
-
-unsigned char * BitCnt;	// Bit count, used when transmitting byte
-unsigned int * TXByte;	// Value sent over UART when Transmit() is called
-unsigned int * RXByte;	// Value recieved once hasRecieved is set
-
-void sendAlphabet(void);
-void showHelp(void);
-void listeningSPI();
-void sendCharSPI(char p_char);
+char MST_Data = 0;                     // Variable for received data
+char SLV_Addr = 0x90;                  // Address is 0x48<<1 for R/W
+int I2C_State = 0;                     // State variable
 
 #endif
