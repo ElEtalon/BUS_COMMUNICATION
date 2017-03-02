@@ -78,26 +78,19 @@
 int main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;             // Stop watchdog timer
-  P1OUT =  0x10;                        // P1.4 set, else reset
-  P1REN |= 0x10;                        // P1.4 pullup
-  P1DIR = 0x01;                         // P1.0 output, else input
-  USICTL0 |= USIPE7 + USIPE6 + USIPE5 + USIOE; // Port, SPI slave
-  USICTL1 |= USIIE;                     // Counter interrupt, flag remains set
-  USICTL0 &= ~USISWRST;                 // USI released for operation
-  USISRL = P1IN;                        // init-load data
-  USICNT = 8;                           // init-load counter
 
   __bis_SR_register(LPM0_bits + GIE);   // Enter LPM0 w/ interrupt
+
+  while(1);
 }
 
 
 #pragma vector=USI_VECTOR
 __interrupt void universal_serial_interface(void)
 {
-  //if (0x7A & USISRL)
-    P1OUT |= 0x01;
-  /*else
-    P1OUT &= ~0x01;*/
-  USISRL = P1IN;
-  USICNT = 8;                           // re-load counter
+  P1OUT &= ~BIT4;
+  P1OUT |= 0x01;
+  USISRL = 0x7A;
+  USICNT = 8;
+  P1OUT |= BIT4;// re-load counter
 }

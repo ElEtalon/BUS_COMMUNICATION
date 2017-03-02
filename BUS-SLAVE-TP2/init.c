@@ -9,16 +9,17 @@
 #include "init.h"
 
 void InitPort(void){
-	P1OUT =  0x10;                        // P1.4 set, else reset
-	P1REN |= 0x10;                        // P1.4 pullup
-	P1DIR = 0x01;                         // P1.0 output, else input
-
-	P1DIR |= 0x04;                        // Reset Slave
-	P1DIR &= ~0x04;
+	  P1OUT =  0x10;                        // P1.4 set, else reset
+	  P1REN |= 0x10;                        // P1.4 pullup
+	  P1DIR = 0x01;                         // P1.0 output, else input
 }
 
 void InitSPI(void){
-    USICTL0 |= USIPE5 + USIPE6 + USIPE7 + USIMST + USIOE;  // 3-pin, 8-bit SPI master
-    USICKCTL = USIDIV_2 + USISSEL_2;
-    USICTL0 &= ~USISWRST;                 // USI released for operation
+	  USICTL0 |= USIPE7 + USIPE6 + USIPE5 + USIOE; // Port, SPI slave
+	  USICTL1 |= USIIE;                     // Counter interrupt, flag remains set
+	  USICTL0 &= ~USISWRST;                 // USI released for operation
+	  USISRL = P1IN;                        // init-load data
+	  USICNT = 8;                           // init-load counter
+	  USICTL1 = USICKPL;                  // Setup clock polarity
+	  USICKCTL = USICKPH;					// phase
 }
