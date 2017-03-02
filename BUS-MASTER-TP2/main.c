@@ -53,8 +53,12 @@ void listeningSPI(){
 }
 
 void showHelp(void){
-	char str[200];
-	sprintf(str, "a%sEnvoyer l'aphabet en SPI%sh%sAfficher la liste des commandes%sl%sListen SPI%s", TAB_WINDOWS, EOL_WINDOWS, TAB_WINDOWS, EOL_WINDOWS, TAB_WINDOWS, EOL_WINDOWS);
+	char str[100];
+	sprintf(str, "a%sEnvoyer l'aphabet en SPI%s", TAB_WINDOWS, EOL_WINDOWS);
+	SendString( strlen(str), str);
+	sprintf(str, "h%sAfficher la liste des commandes%sh", TAB_WINDOWS, EOL_WINDOWS);
+	SendString( strlen(str), str);
+	sprintf(str, "l%sListen SPI%s", TAB_WINDOWS, EOL_WINDOWS);
 	SendString( strlen(str), str);
 }
 
