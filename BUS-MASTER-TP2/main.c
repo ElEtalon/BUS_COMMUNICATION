@@ -13,30 +13,42 @@
 #include "init.h"
 
 void sendAlphabet(void){
-	char str[40], l;
-	unsigned char result;
+	char l;
 
 	// For each alphabet char
 	for(l = 'a'; l<='z'; ++l) {
 
-		// ENVOI
-		sprintf(str, "** ENVOI : %c **", l);
-		SendString( strlen(str), str);
-
-		// EMISSION
-		// transmit
-		TXSPI((unsigned char)l);
+		// Envoi
+		sendCharSPI(l);
 
 		// RECEPTION
-		// get result
-		result = RXSPI();
+		listeningSPI();
+	}
+}
 
-		// show result
-		if(result != NULL){
-			sprintf(str, " || RECU : %c ** %s", result, EOL_WINDOWS);
-			SendString( strlen(str), str);
-		}
+void sendCharSPI(char p_char){
+	char str[30];
 
+	// ENVOI
+	sprintf(str, "** ENVOI : %c **", p_char);
+	SendString( strlen(str), str);
+
+	// EMISSION
+	// transmit
+	TXSPI((unsigned char)p_char);
+}
+
+void listeningSPI(){
+	char str[30];
+	unsigned char result;
+
+	// get result
+	result = RXSPI();
+
+	// show result
+	if(result != NULL){
+		sprintf(str, " || RECU : %c ** %s", result, EOL_WINDOWS);
+		SendString( strlen(str), str);
 	}
 }
 
@@ -88,6 +100,16 @@ __interrupt void USCI0RX_ISR(void)
 			P1OUT |= BIT6; //CS unselect
 
 			break;
+		case (int)'l':
+				// COMMAND
+				sprintf(str, "LISTENING%s", EOL_WINDOWS);
+				SendString( strlen(str), str);
+
+				P1OUT &= ~BIT6; //CS select
+				listeningSPI();
+				P1OUT |= BIT6; //CS unselect
+
+				break;
 		case (int)'h':
 		default:
 			// COMMAND

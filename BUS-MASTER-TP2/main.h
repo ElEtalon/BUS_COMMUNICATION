@@ -14,5 +14,7 @@ const char * LAUNCHPAD_ROLE = "master";
 
 void sendAlphabet(void);
 void showHelp(void);
+void listeningSPI();
+void sendCharSPI(char p_char);
 
 #endif
