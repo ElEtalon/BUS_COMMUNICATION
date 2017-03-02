@@ -9,23 +9,16 @@
 #include "init.h"
 
 void InitPort(void){
-	WDTCTL = WDTPW + WDTHOLD;                      // Stop WDT
-	BCSCTL1 = CALBC1_1MHZ;               // Set DCO
-	DCOCTL = CALDCO_1MHZ;
+	P1OUT =  0x10;                        // P1.4 set, else reset
+	P1REN |= 0x10;                        // P1.4 pullup
+	P1DIR = 0x01;                         // P1.0 output, else input
 
-	P1OUT = 0xC0;                        // P1.6 & P1.7 Pullups
-	P1REN |= 0xC0;                       // P1.6 & P1.7 Pullups
-	P1DIR = 0xFF;                        // Unused pins as outputs
-	P2OUT = 0;
-	P2DIR = 0xFF;
+	P1DIR |= 0x04;                        // Reset Slave
+	P1DIR &= ~0x04;
 }
 
 void InitSPI(void){
-	USICTL0 = USIPE6+USIPE7+USISWRST;    // Port & USI mode setup
-	USICTL1 = USII2C+USIIE+USISTTIE;     // Enable I2C mode & USI interrupts
-	USICKCTL = USICKPL;                  // Setup clock polarity
-	USICNT |= USIIFGCC;                  // Disable automatic clear control
-	USICTL0 &= ~USISWRST;                // Enable USI
-	USICTL1 &= ~USIIFG;                  // Clear pending flag
-	_EINT();
+    USICTL0 |= USIPE5 + USIPE6 + USIPE7 + USIMST + USIOE;  // 3-pin, 8-bit SPI master
+    USICKCTL = USIDIV_2 + USISSEL_2;
+    USICTL0 &= ~USISWRST;                 // USI released for operation
 }
