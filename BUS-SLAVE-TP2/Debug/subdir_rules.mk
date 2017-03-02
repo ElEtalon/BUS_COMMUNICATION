@@ -3,6 +3,20 @@
 ################################################################################
 
 # Each subdirectory must supply rules for building sources it contributes
+init.obj: ../init.c $(GEN_OPTS) | $(GEN_HDRS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: MSP430 Compiler'
+	"D:/CodeComposer/ccsv6/tools/compiler/ti-cgt-msp430_15.12.4.LTS/bin/cl430" -vmsp --use_hw_mpy=none --include_path="D:/CodeComposer/ccsv6/ccs_base/msp430/include" --include_path="D:/CodeComposer/ccsv6/tools/compiler/ti-cgt-msp430_15.12.4.LTS/include" --advice:power=all -g --define=__MSP430G2231__ --display_error_number --diag_warning=225 --diag_wrap=off --printf_support=minimal --preproc_with_compile --preproc_dependency="init.d" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+io.obj: ../io.c $(GEN_OPTS) | $(GEN_HDRS)
+	@echo 'Building file: $<'
+	@echo 'Invoking: MSP430 Compiler'
+	"D:/CodeComposer/ccsv6/tools/compiler/ti-cgt-msp430_15.12.4.LTS/bin/cl430" -vmsp --use_hw_mpy=none --include_path="D:/CodeComposer/ccsv6/ccs_base/msp430/include" --include_path="D:/CodeComposer/ccsv6/tools/compiler/ti-cgt-msp430_15.12.4.LTS/include" --advice:power=all -g --define=__MSP430G2231__ --display_error_number --diag_warning=225 --diag_wrap=off --printf_support=minimal --preproc_with_compile --preproc_dependency="io.d" $(GEN_OPTS__FLAG) "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
 main.obj: ../main.c $(GEN_OPTS) | $(GEN_HDRS)
 	@echo 'Building file: $<'
 	@echo 'Invoking: MSP430 Compiler'

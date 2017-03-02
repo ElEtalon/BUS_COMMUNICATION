@@ -1,1 +1,1 @@
-"./main.obj" "../lnk_msp430g2231.cmd" -llibc.a 
+"./init.obj" "./io.obj" "./main.obj" "../lnk_msp430g2231.cmd" -llibc.a 

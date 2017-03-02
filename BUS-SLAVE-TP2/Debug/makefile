@@ -10,6 +10,8 @@ GEN_OPTS__FLAG :=
 GEN_CMDS__FLAG := 
 
 ORDERED_OBJS += \
+"./init.obj" \
+"./io.obj" \
 "./main.obj" \
 "../lnk_msp430g2231.cmd" \
 $(GEN_CMDS__FLAG) \
@@ -152,8 +154,8 @@ BUS-SLAVE-TP2.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "main.d" 
-	-$(RM) "main.obj" 
+	-$(RM) "init.d" "io.d" "main.d" 
+	-$(RM) "init.obj" "io.obj" "main.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
