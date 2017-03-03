@@ -41,6 +41,11 @@ void sendAlphabet(void)
 	}*/
 }
 
+void sendZ(){
+	sendCharSPI('z');
+	listeningSPI();
+}
+
 //------------------------------------------------------------------------------
 // sendCharSPI: 	shall be call for send alphabet from MASTER to SLAVE.
 //					After send character, wait for the response.
@@ -141,6 +146,14 @@ __interrupt void USCI0RX_ISR(void)
 			SendString( strlen(str), str);
 			P1OUT &= ~BIT4; //CS select
 			sendAlphabet();
+			P1OUT |= BIT4; //CS unselect
+			break;
+		case (int)'z':
+			// COMMAND
+			sprintf(str, "SEND ALPHABET SPI%s", EOL_WINDOWS);
+			SendString( strlen(str), str);
+			P1OUT &= ~BIT4; //CS select
+			sendZ();
 			P1OUT |= BIT4; //CS unselect
 			break;
 		case (int)'l':
