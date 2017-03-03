@@ -26,11 +26,8 @@
 //------------------------------------------------------------------------------
 void sendAlphabet(void)
 {
-	//char l;
-
-	sendCharSPI('a');
-	listeningSPI();
-	/*// For each alphabet char
+	char l;
+	// For each alphabet char
 	for(l = 'a'; l<='z'; ++l)
 	{
 		// Sending character
@@ -38,12 +35,7 @@ void sendAlphabet(void)
 		//__delay_cycles(2000000);//tempwait 2sec
 		// Receiving
 		listeningSPI(); //todo: shall threat response. If not equivalent of sending character, shall failed.
-	}*/
-}
-
-void sendZ(){
-	sendCharSPI('z');
-	listeningSPI();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -97,7 +89,9 @@ void listeningSPI()
 void showHelp(void)
 {
 	char str[100];
-	sprintf(str, "a%sEnvoyer l'aphabet en SPI%s", TAB_WINDOWS, EOL_WINDOWS);
+	/*sprintf(str, "a%sEnvoyer l'aphabet en SPI%s", TAB_WINDOWS, EOL_WINDOWS);
+	SendString( strlen(str), str);*/
+	sprintf(str, "s%sEnvoyer caractère en SPI%s", TAB_WINDOWS, EOL_WINDOWS);
 	SendString( strlen(str), str);
 	sprintf(str, "h%sAfficher la liste des commandes%sh", TAB_WINDOWS, EOL_WINDOWS);
 	SendString( strlen(str), str);
@@ -140,37 +134,37 @@ __interrupt void USCI0RX_ISR(void)
 
 	switch((int)choice)
 	{
-		case (int)'a':
+		/*case (int)'a':		//temp: use for test, shall send all alphabet
 			// COMMAND
 			sprintf(str, "SEND ALPHABET SPI%s", EOL_WINDOWS);
 			SendString( strlen(str), str);
 			P1OUT &= ~BIT4; //CS select
 			sendAlphabet();
 			P1OUT |= BIT4; //CS unselect
-			break;
-		case (int)'z':
-			// COMMAND
-			sprintf(str, "SEND ALPHABET SPI%s", EOL_WINDOWS);
-			SendString( strlen(str), str);
-			P1OUT &= ~BIT4; //CS select
-			sendZ();
-			P1OUT |= BIT4; //CS unselect
-			break;
-		case (int)'l':
+			break;*/
+		/*case (int)'l':		//temp: use for test, shall wait to received a character
 				// COMMAND
 				sprintf(str, "LISTENING%s", EOL_WINDOWS);
 				SendString( strlen(str), str);
 				P1OUT &= ~BIT4; //CS select
 				listeningSPI();
 				P1OUT |= BIT4; //CS unselect
-				break;
+				break;*/
 		case (int)'h':
+				// COMMAND
+				sprintf(str, "HELP%s", EOL_WINDOWS);
+				SendString( strlen(str), str);
+				showHelp();
+				break;
 		default:
-			// COMMAND
-			sprintf(str, "HELP%s", EOL_WINDOWS);
-			SendString( strlen(str), str);
-			showHelp();
-			break;
+				sprintf(str, "SEND CHARACTER SPI%s", EOL_WINDOWS);
+				SendString( strlen(str), str);
+				P1OUT &= ~BIT4; //CS select
+				sendCharSPI(choice);
+				listeningSPI();
+				P1OUT |= BIT4; //CS unselect
+				break;
+
 	}
 
 	// current launchpad

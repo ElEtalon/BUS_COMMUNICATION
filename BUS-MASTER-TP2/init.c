@@ -13,7 +13,7 @@
 void InitUART(void)
 {
 	P1DIR |= BIT6;								// Led en sortie
-	P1OUT |= BIT6;
+	//P1OUT |= BIT6;
     P1SEL |= (BIT1 + BIT2);                 	// P1.1 = RXD, P1.2=TXD
     P1SEL2 |= (BIT1 + BIT2);                	// P1.1 = RXD, P1.2=TXD
     UCA0CTL1 |= UCSSEL_2;                   	// SMCLK

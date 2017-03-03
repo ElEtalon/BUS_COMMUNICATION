@@ -5,7 +5,7 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROGRAM.TI MSP430 USB1/MSP430" value="${build_artifact:BUS-MASTER-TP2}"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.TI MSP430 USB1/MSP430" value="BUS-MASTER-TP2"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:BUS-MASTER-TP2}"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TI MSP430 USB1/MSP430" value="D:/Dev\CCS\BUS_COM\BUS-MASTER-TP2\Debug\BUS-MASTER-TP2.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.TI MSP430 USB1/MSP430" value="C:/Users\pmocq\Desktop\ESIGELEC\Bus de communication\BUS_COMMUNICATION-master\BUS_COMMUNICATION\BUS-MASTER-TP2\Debug\BUS-MASTER-TP2.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/BUS-MASTER-TP2"/>
 </listAttribute>
