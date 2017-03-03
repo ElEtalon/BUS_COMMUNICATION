@@ -26,8 +26,11 @@
 //------------------------------------------------------------------------------
 void sendAlphabet(void)
 {
-	char l;
-	// For each alphabet char
+	//char l;
+
+	sendCharSPI('a');
+	listeningSPI();
+	/*// For each alphabet char
 	for(l = 'a'; l<='z'; ++l)
 	{
 		// Sending character
@@ -35,7 +38,7 @@ void sendAlphabet(void)
 		//__delay_cycles(2000000);//tempwait 2sec
 		// Receiving
 		listeningSPI(); //todo: shall threat response. If not equivalent of sending character, shall failed.
-	}
+	}*/
 }
 
 //------------------------------------------------------------------------------
@@ -136,17 +139,17 @@ __interrupt void USCI0RX_ISR(void)
 			// COMMAND
 			sprintf(str, "SEND ALPHABET SPI%s", EOL_WINDOWS);
 			SendString( strlen(str), str);
-			P1OUT &= ~BIT6; //CS select
+			P1OUT &= ~BIT4; //CS select
 			sendAlphabet();
-			P1OUT |= BIT6; //CS unselect
+			P1OUT |= BIT4; //CS unselect
 			break;
 		case (int)'l':
 				// COMMAND
 				sprintf(str, "LISTENING%s", EOL_WINDOWS);
 				SendString( strlen(str), str);
-				P1OUT &= ~BIT6; //CS select
+				P1OUT &= ~BIT4; //CS select
 				listeningSPI();
-				P1OUT |= BIT6; //CS unselect
+				P1OUT |= BIT4; //CS unselect
 				break;
 		case (int)'h':
 		default:

@@ -34,8 +34,10 @@ void InitUART(void)
 //------------------------------------------------------------------------------
 void InitSPI(void)
 {
-	P1SEL |= (BIT6 + BIT7);                 // P1.1 = RXD, P1.2=TXD
-	P1SEL2 |= (BIT6 + BIT7);                // P1.1 = RXD, P1.2=TXD
+	P1DIR |= BIT4;
+	P1OUT |= BIT4;
+	P1SEL |= (BIT5 + BIT6 + BIT7);                 // P1.1 = RXD, P1.2=TXD
+	P1SEL2 |= (BIT5 + BIT6 + BIT7);                // P1.1 = RXD, P1.2=TXD
 
 	UCB0CTL1 |= UCSSEL_2;
 	UCB0BR0 = 104;                          // 1MHz, 9600
